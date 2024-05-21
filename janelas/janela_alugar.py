@@ -1,6 +1,7 @@
 from typing import Tuple
 import customtkinter as ctk
 from janelas.cadastro_cliente import CadastroCliente
+from db.database import Database
 
 class AlugarVeiculo(ctk.CTkToplevel):
     def __init__(self, master=None):
@@ -22,8 +23,11 @@ class AlugarVeiculo(ctk.CTkToplevel):
 
         self.labelPlaca = ctk.CTkLabel(self.frameItens, text='Placa:', font=('Open Sans', 16, 'bold'))
         self.labelPlaca.grid(row=0, column=0, padx=10, pady=(100, 10), sticky='w')
-        self.comboPlaca = ctk.CTkComboBox(self.frameItens, font=('Open Sans', 16))
+        self.comboPlaca = ctk.CTkComboBox(self.frameItens, font=('Open Sans', 16), values=self.carregar_placas())
         self.comboPlaca.grid(row=0, column=1, padx=10, pady=(100, 10), sticky='w')
+
+        self.btnCarregar = ctk.CTkButton(self.frameItens, text="Carregar", font=('Open Sans', 16, 'bold'), command=self.preencher_campos)
+        self.btnCarregar.grid(row=0, column=2, padx=10, pady=(100,10), sticky='ew')
 
         self.labelModelo = ctk.CTkLabel(self.frameItens, text="Modelo:", font=('Open Sans', 16, 'bold'))
         self.labelModelo.grid(row=1, column=0, padx=10, pady=10, sticky='w')
@@ -59,3 +63,38 @@ class AlugarVeiculo(ctk.CTkToplevel):
     def cadastrar_cliente(self):
         janela_cadastro = CadastroCliente(self)
         janela_cadastro.grab_set()
+
+    def carregar_placas(self):
+        db = Database("db/locadora.db")
+        db.connect()
+        query = "SELECT placa FROM veiculos WHERE disponibilidade = 'Disponivel'"
+        cursor =db.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        values = ['Selecione uma placa']
+        for row in rows:
+            values.append(row[0])
+        db.disconect()
+        return values
+    
+    def preencher_campos(self):
+        db = Database("db/locadora.db")
+        db.connect()
+        query = f"SELECT modelo, ano FROM veiculos WHERE placa = '{self.comboPlaca.get()}'"
+        cursor =db.connection.cursor()
+        cursor.execute(query)
+        row = cursor.fetchone()
+        db.disconect
+
+        if row: 
+            self.entryModelo.configure(state='normal')
+            self.entryAno.configure(state='normal')
+
+            self.entryModelo.delete(0, 'end')
+            self.entryAno.delete(0,'end')
+
+            self.entryModelo.insert(0, row[0])
+            self.entryAno.insert(0, row[1])
+
+            self.entryModelo.configure(state='readonly')
+            self.entryAno.configure(state='readonly')
