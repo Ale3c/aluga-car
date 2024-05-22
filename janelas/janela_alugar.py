@@ -36,12 +36,12 @@ class AlugarVeiculo(ctk.CTkToplevel):
 
         self.labelAno = ctk.CTkLabel(self.frameItens, text="Ano:", font=('Open Sans', 16, 'bold'))
         self.labelAno.grid(row=1, column=2, padx=10, pady=10, sticky='w')
-        self.entryAno = ctk.CTkEntry(self.frameItens, font=('Open Sans', 16), width=300, state='disabled')
+        self.entryAno = ctk.CTkEntry(self.frameItens, font=('Open Sans', 16), state='disabled')
         self.entryAno.grid(row=1, column=3, padx=10, pady=10, sticky='w')
         
         self.labelCliente = ctk.CTkLabel(self.frameItens, text="Cliente", font=('Open Sans', 16, 'bold'))
         self.labelCliente.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-        self.comboCliente = ctk.CTkComboBox(self.frameItens, font=('Open Sans', 16))
+        self.comboCliente = ctk.CTkComboBox(self.frameItens, font=('Open Sans', 16), width=300, values=self.carregar_clientes())
         self.comboCliente.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
         self.botaoCadCliente = ctk.CTkButton(self.frameItens, text="Cadastrar Cliente", font=('Open Sans', 16, 'bold'), command=self.cadastrar_cliente)
@@ -57,7 +57,7 @@ class AlugarVeiculo(ctk.CTkToplevel):
         self.entryDataFim = ctk.CTkEntry(self.frameItens, font=('Open Sans', 16), placeholder_text='dd/mm/aaaa')
         self.entryDataFim.grid(row=3, column=3, padx=10, pady=10, sticky='w')
 
-        self.botaoAlugar = ctk.CTkButton(self.frameItens, text= 'Alugar', font=('Open Sans', 16, 'bold') )
+        self.botaoAlugar = ctk.CTkButton(self.frameItens, text= 'Alugar', font=('Open Sans', 16, 'bold'), command=self.alugar_veiculo)
         self.botaoAlugar.grid(row=4, column=0, padx=10, pady=10, sticky='ew')
 
     def cadastrar_cliente(self):
@@ -98,3 +98,33 @@ class AlugarVeiculo(ctk.CTkToplevel):
 
             self.entryModelo.configure(state='readonly')
             self.entryAno.configure(state='readonly')
+
+    def carregar_clientes(self):
+        db = Database("db/locadora.db")
+        db.connect()
+        query = "SELECT cpf, nome FROM clientes"
+        cursor = db.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        values = ['Selecione um cliente']
+        for row in rows:
+            values.append(f"{row[0]} - {row[1]}")
+        db.disconect()
+        return values
+    
+    def alugar_veiculo(self):
+        placa = self.comboPlaca.get()
+        cpf = self.comboCliente.get()
+        data_inicio = self.entryDataInicio.get()
+        data_fim = self.entryDataFim.get()
+
+        if placa and cpf and data_inicio and data_fim:
+            db = Database("db/locadora.db")
+            db.connect()
+            query = f"INSERT INTO alugueis (placa, cpf, data_inicio, data_fim) VALUES ('{placa}', '{cpf}', '{data_inicio}', '{data_fim}')"
+            msg_ok = "Veículo alugado com sucesso"
+            msg_error = "Erro ao alugar veículo"
+            db.execute_query(query, msg_ok, msg_error)
+            db.disconect()
+            self.entryDataInicio.delete(0, 'end')
+            self.entryDataFim.delete(0, 'end')
